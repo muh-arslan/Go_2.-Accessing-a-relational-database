@@ -14,6 +14,7 @@ func main() {
 	router.GET("/albums", dataaccess.ShowAllAlbums)
 	router.GET("/albums/:id", dataaccess.AlbumByID)
 	router.GET("/albums/filterByArtist/:name", dataaccess.AlbumsByArtist)
+	router.POST("/albums", dataaccess.AddAlbum)
 
 	router.Run("localhost:8080")
 }

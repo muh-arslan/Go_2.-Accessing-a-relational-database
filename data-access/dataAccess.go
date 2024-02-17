@@ -54,7 +54,7 @@ func DBConnection() {
 func ShowAllProcesses() {
 	// fetchAlbumByArtist()
 	// fetchAlbumByID()
-	addAndFetchAlbum()
+	// addAndFetchAlbum()
 	// fetchAllAlbums()
 	deleteAndFetchAlbumByID()
 	// fetchAllAlbums()
@@ -79,22 +79,22 @@ func ShowAllProcesses() {
 
 // }
 
-func addAndFetchAlbum() {
-	albumID, err := addAlbum(Album{
-		Title:  "Rich Dad, Poor Dad",
-		Artist: "Robert T. Kiyosaki",
-		Price:  8.99,
-	})
-	// albumID, err := addAlbum(Album{
-	// 	Title:  "Start With Why",
-	// 	Artist: "Simon Sinek",
-	// 	Price:  18.00,
-	// })
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Id of added album: %v\n", albumID)
-}
+// func addAndFetchAlbum() {
+// 	albumID, err := addAlbum(Album{
+// 		Title:  "Rich Dad, Poor Dad",
+// 		Artist: "Robert T. Kiyosaki",
+// 		Price:  8.99,
+// 	})
+// 	// albumID, err := addAlbum(Album{
+// 	// 	Title:  "Start With Why",
+// 	// 	Artist: "Simon Sinek",
+// 	// 	Price:  18.00,
+// 	// })
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Printf("Id of added album: %v\n", albumID)
+// }
 
 // func fetchAllAlbums() {
 // 	allAlbums, err := showAllAlbums()
@@ -177,16 +177,32 @@ func AlbumByID(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, album)
 }
 
-func addAlbum(alb Album) (int64, error) {
+func AddAlbum(c *gin.Context) {
+	var alb Album
+
+	if err := c.BindJSON(&alb); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid syntax"})
+		return
+	}
+
+	if (alb.Title == "") || (alb.Artist == "") || (alb.Price == 0) {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "pass all the parameters"})
+		return
+	}
+
 	result, err := db.Exec("INSERT INTO album (title, artist, price) VALUES (?, ?, ?)", alb.Title, alb.Artist, alb.Price)
 	if err != nil {
-		return 0, fmt.Errorf("addAlbum: %v", err)
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err.Error()})
+		return
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("addAlbum: %v", err)
+	id, er := result.LastInsertId()
+
+	if er != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
-	return id, nil
+	alb.ID = id
+	c.IndentedJSON(http.StatusCreated, alb)
 }
 
 func ShowAllAlbums(c *gin.Context) {
