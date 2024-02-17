@@ -50,7 +50,7 @@ func DBConnection() {
 
 func ShowAllProcesses() {
 	fetchAlbumByArtist()
-	fetchAlbumByID()
+	// fetchAlbumByID()
 	addAndFetchAlbum()
 	// fetchAllAlbums()
 	deleteAndFetchAlbumByID()
@@ -67,14 +67,14 @@ func fetchAlbumByArtist() {
 	fmt.Printf("Albums found: %v\n", albums)
 }
 
-func fetchAlbumByID() {
-	album, err := albumByID(2)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Album found: %v\n", album)
+// func fetchAlbumByID() {
+// 	album, err := albumByID(2)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Printf("Album found: %v\n", album)
 
-}
+// }
 
 func addAndFetchAlbum() {
 	albumID, err := addAlbum(Album{
@@ -146,18 +146,21 @@ func albumsByArtist(name string) ([]Album, error) {
 	return albums, nil
 }
 
-func albumByID(id int64) (Album, error) {
+func AlbumByID(c *gin.Context) {
+	id := c.Param("id")
 	var album Album
 
 	row := db.QueryRow("SELECT * FROM album WHERE id=?", id)
 
 	if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
 		if err == sql.ErrNoRows {
-			return album, fmt.Errorf("albumByID %d: no such album", id)
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no such album found"})
+			return
 		}
-		return album, fmt.Errorf("albumByID %d: %v", id, err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "something went wrong"})
+		return
 	}
-	return album, nil
+	c.IndentedJSON(http.StatusOK, album)
 }
 
 func addAlbum(alb Album) (int64, error) {
@@ -184,11 +187,13 @@ func ShowAllAlbums(c *gin.Context) {
 		var albs Album
 		if err := rows.Scan(&albs.ID, &albs.Title, &albs.Artist, &albs.Price); err != nil {
 			c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err.Error()})
+			return
 		}
 		albums = append(albums, albs)
 	}
 	if err := rows.Err(); err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
 	c.IndentedJSON(http.StatusOK, albums)
 }
