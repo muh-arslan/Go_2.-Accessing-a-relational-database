@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
@@ -24,6 +25,8 @@ func DBConnection() {
 	cfg := mysql.Config{
 		User:   os.Getenv("DBUSER"),
 		Passwd: os.Getenv("DBPASS"),
+		// User:   "root",
+		// Passwd: "127586",
 		Net:    "tcp",
 		Addr:   "127.0.0.1:3306",
 		DBName: "recordings",
@@ -49,7 +52,7 @@ func DBConnection() {
 }
 
 func ShowAllProcesses() {
-	fetchAlbumByArtist()
+	// fetchAlbumByArtist()
 	// fetchAlbumByID()
 	addAndFetchAlbum()
 	// fetchAllAlbums()
@@ -59,13 +62,13 @@ func ShowAllProcesses() {
 	// fetchAllAlbums()
 }
 
-func fetchAlbumByArtist() {
-	albums, err := albumsByArtist("John Coltrane")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Albums found: %v\n", albums)
-}
+// func fetchAlbumByArtist() {
+// 	albums, err := albumsByArtist("John Coltrane")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Printf("Albums found: %v\n", albums)
+// }
 
 // func fetchAlbumByID() {
 // 	album, err := albumByID(2)
@@ -124,26 +127,37 @@ func deleteAndFetchAllAlbums() {
 	fmt.Println("All Record are deleted")
 }
 
-func albumsByArtist(name string) ([]Album, error) {
+func AlbumsByArtist(c *gin.Context) {
+	name := c.Param("name")
+	name = strings.Replace(name, "+", " ", 5)
+
 	var albums []Album
 
 	rows, err := db.Query("SELECT * FROM album WHERE artist = ?", name)
 	if err != nil {
-		return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var alb Album
 		if err := rows.Scan(&alb.ID, &alb.Title, &alb.Artist, &alb.Price); err != nil {
-			return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
+			c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err.Error()})
+			return
 		}
 		albums = append(albums, alb)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
+
+	if albums == nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": "no record found"})
+		return
 	}
-	return albums, nil
+	if err := rows.Err(); err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, albums)
 }
 
 func AlbumByID(c *gin.Context) {
@@ -154,7 +168,7 @@ func AlbumByID(c *gin.Context) {
 
 	if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
 		if err == sql.ErrNoRows {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no such album found"})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "something went wrong"})
