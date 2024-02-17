@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -50,11 +52,11 @@ func ShowAllProcesses() {
 	fetchAlbumByArtist()
 	fetchAlbumByID()
 	addAndFetchAlbum()
-	fetchAllAlbums()
+	// fetchAllAlbums()
 	deleteAndFetchAlbumByID()
-	fetchAllAlbums()
+	// fetchAllAlbums()
 	deleteAndFetchAllAlbums()
-	fetchAllAlbums()
+	// fetchAllAlbums()
 }
 
 func fetchAlbumByArtist() {
@@ -91,13 +93,13 @@ func addAndFetchAlbum() {
 	fmt.Printf("Id of added album: %v\n", albumID)
 }
 
-func fetchAllAlbums() {
-	allAlbums, err := showAllAlbums()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Albums found: %v\n", allAlbums)
-}
+// func fetchAllAlbums() {
+// 	allAlbums, err := showAllAlbums()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Printf("Albums found: %v\n", allAlbums)
+// }
 
 func deleteAndFetchAlbumByID() {
 	id := int64(4)
@@ -170,25 +172,25 @@ func addAlbum(alb Album) (int64, error) {
 	return id, nil
 }
 
-func showAllAlbums() ([]Album, error) {
+func ShowAllAlbums(c *gin.Context) {
 	var albums []Album
 	rows, err := db.Query("SELECT * FROM album")
 	if err != nil {
-		return nil, fmt.Errorf("showAllAlbums: %v - No Records Found", err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "No Record Found"})
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var albs Album
 		if err := rows.Scan(&albs.ID, &albs.Title, &albs.Artist, &albs.Price); err != nil {
-			return nil, fmt.Errorf("showAllAlbums: %v", err)
+			c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err.Error()})
 		}
 		albums = append(albums, albs)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("showAllAlbums: %v", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 	}
-	return albums, nil
+	c.IndentedJSON(http.StatusOK, albums)
 }
 
 func deleteAllAlbums() (bool, error) {
