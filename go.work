@@ -1,0 +1,6 @@
+go 1.22.0
+
+use (
+	./data-access
+	./web-service-gin
+)

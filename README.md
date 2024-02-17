@@ -1,5 +1,10 @@
 # Accessing a relational database
 
+## Setup go.work
+    go work init
+    go work use ./data-access
+    go work use ./web-service-gin
+
 ## Setup DB
     mysql -u root -p
     create database recordings;
