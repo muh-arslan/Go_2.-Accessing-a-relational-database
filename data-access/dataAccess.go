@@ -56,7 +56,7 @@ func ShowAllProcesses() {
 	// fetchAlbumByID()
 	// addAndFetchAlbum()
 	// fetchAllAlbums()
-	deleteAndFetchAlbumByID()
+	// deleteAndFetchAlbumByID()
 	// fetchAllAlbums()
 	deleteAndFetchAllAlbums()
 	// fetchAllAlbums()
@@ -104,17 +104,17 @@ func ShowAllProcesses() {
 // 	fmt.Printf("Albums found: %v\n", allAlbums)
 // }
 
-func deleteAndFetchAlbumByID() {
-	id := int64(4)
-	res, err := deleteAlbumByID(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !res {
-		log.Fatalf("Record with id : %v not found\n", id)
-	}
-	fmt.Printf("Record with id : %v deleted\n", id)
-}
+// func deleteAndFetchAlbumByID() {
+// 	id := int64(4)
+// 	res, err := deleteAlbumByID(id)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	if !res {
+// 		log.Fatalf("Record with id : %v not found\n", id)
+// 	}
+// 	fmt.Printf("Record with id : %v deleted\n", id)
+// }
 
 func deleteAndFetchAllAlbums() {
 	result, err := deleteAllAlbums()
@@ -236,17 +236,21 @@ func deleteAllAlbums() (bool, error) {
 	return true, nil
 }
 
-func deleteAlbumByID(id int64) (bool, error) {
+func DeleteAlbumByID(c *gin.Context) {
+	id := c.Param("id")
 	result, err := db.Exec("DELETE FROM album WHERE id=?", id)
 	if err != nil {
-		return false, fmt.Errorf("deleteAlbumByID: %v", err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
 	}
 	affectedRow, err := result.RowsAffected()
 	if err != nil {
-		return false, fmt.Errorf("deleteAlbumByID: %v", err)
+		c.IndentedJSON(http.StatusNotModified, gin.H{"message": err.Error()})
+		return
 	}
 	if affectedRow <= 0 {
-		return false, nil
+		c.IndentedJSON(http.StatusNotModified, gin.H{"message": err.Error()})
+		return
 	}
-	return true, nil
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "success"})
 }
