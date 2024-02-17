@@ -43,38 +43,79 @@ func main() {
 
 	fmt.Println("Connected")
 
+	fetchAlbumByArtist()
+	fetchAlbumByID()
+	addAndFetchAlbum()
+	fetchAllAlbums()
+	deleteAndFetchAlbumByID()
+	fetchAllAlbums()
+	deleteAndFetchAllAlbums()
+	fetchAllAlbums()
+}
+
+func fetchAlbumByArtist() {
 	albums, err := albumsByArtist("John Coltrane")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Albums found: %v\n", albums)
+}
 
+func fetchAlbumByID() {
 	album, err := albumByID(2)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Album found: %v\n", album)
 
-	// albumID, err := addAlbum(Album{
-	// 	Title:  "Rich Dad, Poor Dad",
-	// 	Artist: "Robert T. Kiyosaki",
-	// 	Price:  8.99,
-	// })
+}
+
+func addAndFetchAlbum() {
+	albumID, err := addAlbum(Album{
+		Title:  "Rich Dad, Poor Dad",
+		Artist: "Robert T. Kiyosaki",
+		Price:  8.99,
+	})
 	// albumID, err := addAlbum(Album{
 	// 	Title:  "Start With Why",
 	// 	Artist: "Simon Sinek",
 	// 	Price:  18.00,
 	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("Id of added album: %v\n", albumID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Id of added album: %v\n", albumID)
+}
 
+func fetchAllAlbums() {
 	allAlbums, err := showAllAlbums()
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Albums found: %v\n", allAlbums)
+}
+
+func deleteAndFetchAlbumByID() {
+	id := int64(4)
+	res, err := deleteAlbumByID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !res {
+		log.Fatalf("Record with id : %v not found\n", id)
+	}
+	fmt.Printf("Record with id : %v deleted\n", id)
+}
+
+func deleteAndFetchAllAlbums() {
+	result, err := deleteAllAlbums()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !result {
+		log.Fatal("Not Record found to Delete")
+	}
+	fmt.Println("All Record are deleted")
 }
 
 func albumsByArtist(name string) ([]Album, error) {
@@ -144,4 +185,27 @@ func showAllAlbums() ([]Album, error) {
 		return nil, fmt.Errorf("showAllAlbums: %v", err)
 	}
 	return albums, nil
+}
+
+func deleteAllAlbums() (bool, error) {
+	_, err := db.Query("DELETE FROM album")
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func deleteAlbumByID(id int64) (bool, error) {
+	result, err := db.Exec("DELETE FROM album WHERE id=?", id)
+	if err != nil {
+		return false, fmt.Errorf("deleteAlbumByID: %v", err)
+	}
+	affectedRow, err := result.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("deleteAlbumByID: %v", err)
+	}
+	if affectedRow <= 0 {
+		return false, nil
+	}
+	return true, nil
 }
