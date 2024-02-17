@@ -1,4 +1,4 @@
-package main
+package dataaccess
 
 import (
 	"database/sql"
@@ -12,13 +12,13 @@ import (
 var db *sql.DB
 
 type Album struct {
-	ID     int64
-	Title  string
-	Artist string
-	Price  float32
+	ID     int64   `json:"id"`
+	Title  string  `json:"title"`
+	Artist string  `json:"artist"`
+	Price  float32 `json:"price"`
 }
 
-func main() {
+func DBConnection() {
 	cfg := mysql.Config{
 		User:   os.Getenv("DBUSER"),
 		Passwd: os.Getenv("DBPASS"),
@@ -43,6 +43,10 @@ func main() {
 
 	fmt.Println("Connected")
 
+	// ShowAllProcesses()
+}
+
+func ShowAllProcesses() {
 	fetchAlbumByArtist()
 	fetchAlbumByID()
 	addAndFetchAlbum()
