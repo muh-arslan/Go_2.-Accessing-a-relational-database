@@ -51,16 +51,16 @@ func DBConnection() {
 	// ShowAllProcesses()
 }
 
-func ShowAllProcesses() {
-	// fetchAlbumByArtist()
-	// fetchAlbumByID()
-	// addAndFetchAlbum()
-	// fetchAllAlbums()
-	// deleteAndFetchAlbumByID()
-	// fetchAllAlbums()
-	deleteAndFetchAllAlbums()
-	// fetchAllAlbums()
-}
+// func ShowAllProcesses() {
+// 	fetchAlbumByArtist()
+// 	fetchAlbumByID()
+// 	addAndFetchAlbum()
+// 	fetchAllAlbums()
+// 	deleteAndFetchAlbumByID()
+// 	fetchAllAlbums()
+// 	deleteAndFetchAllAlbums()
+// 	fetchAllAlbums()
+// }
 
 // func fetchAlbumByArtist() {
 // 	albums, err := albumsByArtist("John Coltrane")
@@ -116,16 +116,16 @@ func ShowAllProcesses() {
 // 	fmt.Printf("Record with id : %v deleted\n", id)
 // }
 
-func deleteAndFetchAllAlbums() {
-	result, err := deleteAllAlbums()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !result {
-		log.Fatal("Not Record found to Delete")
-	}
-	fmt.Println("All Record are deleted")
-}
+// func deleteAndFetchAllAlbums() {
+// 	result, err := deleteAllAlbums()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	if !result {
+// 		log.Fatal("Not Record found to Delete")
+// 	}
+// 	fmt.Println("All Record are deleted")
+// }
 
 func AlbumsByArtist(c *gin.Context) {
 	name := c.Param("name")
@@ -210,6 +210,7 @@ func ShowAllAlbums(c *gin.Context) {
 	rows, err := db.Query("SELECT * FROM album")
 	if err != nil {
 		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "No Record Found"})
+		return
 	}
 	defer rows.Close()
 
@@ -225,15 +226,26 @@ func ShowAllAlbums(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	if albums == nil {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "No Record Found"})
+		return
+	}
 	c.IndentedJSON(http.StatusOK, albums)
 }
 
-func deleteAllAlbums() (bool, error) {
-	_, err := db.Query("DELETE FROM album")
+func DeleteAllAlbums(c *gin.Context) {
+	result, err := db.Exec("DELETE FROM album")
 	if err != nil {
-		return false, err
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
 	}
-	return true, nil
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		c.IndentedJSON(http.StatusNotModified, gin.H{"message": err.Error()})
+		return
+	}
+	resp := fmt.Sprintf("%v rows deleted", affectedRows)
+	c.IndentedJSON(http.StatusOK, gin.H{"message": resp})
 }
 
 func DeleteAlbumByID(c *gin.Context) {
