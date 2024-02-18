@@ -233,6 +233,51 @@ func ShowAllAlbums(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, albums)
 }
 
+func UpdateAlbumByID(c *gin.Context) {
+	var alb Album
+
+	if err := c.BindJSON(&alb); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invlalid request"})
+		return
+	}
+
+	id := int64(alb.ID)
+	if id == 0 {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "id is required"})
+		return
+	}
+
+	query := "UPDATE album SET "
+	if alb.Title != "" {
+		query += fmt.Sprintf("title = '%s', ", alb.Title)
+	}
+	if alb.Artist != "" {
+		query += fmt.Sprintf("artist = '%s', ", alb.Artist)
+	}
+	if alb.Price != 0 {
+		query += fmt.Sprintf("price = %f, ", alb.Price)
+	}
+	query = strings.TrimSuffix(query, ", ")
+	query += " WHERE id = ?"
+
+	result, err := db.Exec(query, id)
+	if err != nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err.Error()})
+		return
+	}
+	rowsAffected, er := result.RowsAffected()
+	if er != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": er.Error()})
+		return
+	}
+
+	if rowsAffected == 0 {
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "no album found with given id"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "album updated successfully"})
+}
+
 func DeleteAllAlbums(c *gin.Context) {
 	result, err := db.Exec("DELETE FROM album")
 	if err != nil {
